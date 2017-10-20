@@ -1,6 +1,9 @@
 package com.midcoastmaineiacs.Steamworks;
 
-import com.midcoastmaineiacs.Steamworks.auto.*;
+import com.midcoastmaineiacs.Steamworks.auto.Auto;
+import com.midcoastmaineiacs.Steamworks.auto.Gear;
+import com.midcoastmaineiacs.Steamworks.auto.MMCommand;
+import com.midcoastmaineiacs.Steamworks.auto.VisionServer;
 import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -109,6 +112,13 @@ public class Robot extends IterativeRobot {
 			}
 		}
 
+		dashboard.addIndicator("pi", "Pi is ALIVE", "Pi is DEAD", "red", vision.isAlive());
+		dashboard.addIndicator("vision", "Iz gud", "No tape", "red", vision.izgud());
+		dashboard.addIndicator("power", "Full speed", "Half speed", "orange", fullPower);
+		dashboard.addIndicator("competition", "Competition", "Practice", "orange", competition);
+		dashboard.addReadout("dt_state", "Unknown DriveTrain state");
+		dashboard.applyLayout(2);
+
 		if (!FORCE_COMPETITION) {
 			//                              detect whether or not we're at a competition
 			boolean willEnableCompetition = DriverStation.getInstance().isFMSAttached() || PRACTICE_IS_COMPETITION &&
@@ -125,11 +135,8 @@ public class Robot extends IterativeRobot {
 		System.out.println("All systems go!");
 	}
 
-	/** time / 20ms since last frame from rPi */
-	public static int time = 0;
-
 	/**
-	 * Updates smartdashboard values, updates competition mode status, and verifies status of rPi
+	 * Updates MMDashboard values, updates competition mode status, and verifies status of rPi
 	 */
 	@Override
 	public void robotPeriodic() {
@@ -209,6 +216,22 @@ public class Robot extends IterativeRobot {
 		dashboard.setBoolean("power", fullPower);
 		dashboard.setBoolean("enabled", Scheduler.enabled);
 		dashboard.setDouble("heading", driveTrain.getGyroMod() - 180);
+		switch(driveTrain.getState()) {
+			case DISABLED:
+				dashboard.setColoredString("dt_state", "Drive train: Disabled", "red");
+				break;
+			case COMMAND:
+				dashboard.setColoredString("dt_state", "Drive train: Command", "orange");
+				break;
+			case AUTOPILOT:
+				dashboard.setColoredString("dt_state", "Drive train: Autopilot", "orange");
+				break;
+			case TELEOP:
+				dashboard.setColoredString("dt_state", "Drive train: Teleop", "green");
+				break;
+			default:
+				dashboard.setString("dt_state", "Unknown DriveTrain state");
+		}
 
 		// debug values
 		dashboard.setDouble("calc angle", vision.getTurningAngle());
