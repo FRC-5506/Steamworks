@@ -70,8 +70,6 @@ public class Robot extends IterativeRobot {
 
 		//Vision.init();
 		vision = new VisionServer();
-		visionThread = new Thread(vision);
-		visionThread.start();
 		// front camera (rope climber end)
 		CameraServer.getInstance().startAutomaticCapture(0).setExposureManual(40);
 		// back camera (gear end)
@@ -112,11 +110,11 @@ public class Robot extends IterativeRobot {
 			}
 		}
 
-		dashboard.addIndicator("pi", "Pi is ALIVE", "Pi is DEAD", "red", vision.isAlive());
 		dashboard.addIndicator("vision", "Iz gud", "No tape", "red", vision.izgud());
 		dashboard.addIndicator("power", "Full speed", "Half speed", "orange", fullPower);
 		dashboard.addIndicator("competition", "Competition", "Practice", "orange", competition);
-		dashboard.addReadout("dt_state", "Unknown DriveTrain state");
+		dashboard.addReadout("dt_state", "Unknown drive train state");
+		dashboard.addIndicator("pi", "Pi is ALIVE", "Pi is DEAD", "red", vision.isAlive());
 		dashboard.applyLayout(2);
 
 		if (!FORCE_COMPETITION) {
@@ -218,19 +216,19 @@ public class Robot extends IterativeRobot {
 		dashboard.setDouble("heading", driveTrain.getGyroMod() - 180);
 		switch(driveTrain.getState()) {
 			case DISABLED:
-				dashboard.setColoredString("dt_state", "Drive train: Disabled", "red");
+				dashboard.setColoredString("dt_state", "Drive train is DORMANT", "red");
 				break;
 			case COMMAND:
-				dashboard.setColoredString("dt_state", "Drive train: Command", "orange");
+				dashboard.setColoredString("dt_state", "Drive train in COMMAND control", "orange");
 				break;
 			case AUTOPILOT:
-				dashboard.setColoredString("dt_state", "Drive train: Autopilot", "orange");
+				dashboard.setColoredString("dt_state", "Drive train in AUTOPILOT", "orange");
 				break;
 			case TELEOP:
-				dashboard.setColoredString("dt_state", "Drive train: Teleop", "green");
+				dashboard.setColoredString("dt_state", "Drive train in TELEOP", "green");
 				break;
 			default:
-				dashboard.setString("dt_state", "Unknown DriveTrain state");
+				dashboard.setString("dt_state", "Unknown drive train state");
 		}
 
 		// debug values

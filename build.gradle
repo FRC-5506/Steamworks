@@ -2,12 +2,30 @@ plugins {
     id "java"
     id "eclipse"
     id "idea"
-    id "jaci.openrio.gradle.GradleRIO" version "2017.2.3"
+    id "jaci.openrio.gradle.GradleRIO" version "2017.10.30"
 }
 
-frc {
-    team = "5506"
-    robotClass = "com.midcoastmaineiacs.Steamworks.Robot"
+deploy {
+    targets {
+        target('roborio', jaci.openrio.gradle.frc.RoboRIO) {
+            team = 5506
+            // Other values can be edited through EmbeddedTools.
+            // See https://github.com/JacisNonsense/EmbeddedTools#spec
+        }
+        // Other targets can be edited through EmbeddedTools.
+        // See https://github.com/JacisNonsense/EmbeddedTools#spec
+    }
+    artifacts {
+        // Setup a Java Artifact. Required for Java Users.
+        artifact('Steamworks', jaci.openrio.gradle.frc.FRCJavaArtifact) {
+            targets << 'roborio'
+            // Other values can be edited through EmbeddedTools.
+            // See https://github.com/JacisNonsense/EmbeddedTools#spec
+        }
+        
+        // Other artifacts can be edited through EmbeddedTools.
+        // See https://github.com/JacisNonsense/EmbeddedTools#spec
+    }
 }
 
 repositories {
@@ -16,22 +34,17 @@ repositories {
 
 dependencies {
     compile wpilib()
-    compile talonSrx()
+    compile ctre()
     compile navx()
     compile "org.java-websocket:Java-WebSocket:1.3.4"
     compile "com.fasterxml.jackson.core:jackson-databind:2.6.3"
 }
 
-def robotManifest = {
-    attributes 'Main-Class': 'edu.wpi.first.wpilibj.RobotBase'
-    attributes 'Robot-Class': frc.robotClass
-}
-
 jar {
     from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    manifest robotManifest
+    manifest jaci.openrio.gradle.GradleRIOPlugin.javaManifest('com.midcoastmaineiacs.Steamworks.Robot')
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.2.1'
+    gradleVersion = '4.2.1'
 }

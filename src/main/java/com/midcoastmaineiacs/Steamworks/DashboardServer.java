@@ -52,7 +52,10 @@ public class DashboardServer extends WebSocketTableServer {
 	public void applyLayout(int minCompassHeight) {
 		Map<String, Object> map = new HashMap<>();
 		map.put("toggles", indicators);
-		map.put("compassHeight", indicators.size() + minCompassHeight % 2 == 0 ? minCompassHeight + 1 : minCompassHeight);
+		if (indicators.size() + minCompassHeight % 2 == 0)
+			map.put("compassHeight", minCompassHeight);
+		else
+			map.put("compassHeight", minCompassHeight + 1);
 		map.put("fieldList", keys);
 		ObjectMapper m = new ObjectMapper();
 		try {

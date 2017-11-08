@@ -1,6 +1,5 @@
 package com.midcoastmaineiacs.Steamworks;
 
-import com.sun.istack.internal.Nullable;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -192,7 +191,7 @@ public abstract class WebSocketTableServer extends WebSocketServer {
 
 	protected void onSync(Map<String, Serializable> oldTable) {}
 
-	protected void onChange(String key, @Nullable Serializable old) {}
+	protected void onChange(String key, Serializable old) {}
 
 	protected void rejectSync() {
 		if (tempTable != null) {
