@@ -1,4 +1,4 @@
-package com.midcoastmaineiacs.Steamworks;
+package com.midcoastmaineiacs.Steamworks.common;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings({"WeakerAccess", "SameParameterValue", "unused"})
 public abstract class WebSocketTableServer extends WebSocketServer {
 	private final boolean recessive;
 	private final String name;
@@ -101,7 +102,6 @@ public abstract class WebSocketTableServer extends WebSocketServer {
 	private synchronized void setValue(String key, Serializable data) {
 		if (initialized) {
 			if (!table.containsKey(key) || !table.get(key).equals(data)) {
-				Serializable old = table.get(key);
 				table.put(key, data);
 				sendToAllClients("change:" + key.length() + ";" + key + serialize(data));
 			}

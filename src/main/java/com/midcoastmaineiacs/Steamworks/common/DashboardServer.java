@@ -1,4 +1,4 @@
-package com.midcoastmaineiacs.Steamworks;
+package com.midcoastmaineiacs.Steamworks.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("SameParameterValue")
 public class DashboardServer extends WebSocketTableServer {
 	private static final int PORT = 5800;
 	private Map<String, Serializable> indicators = new HashMap<>();

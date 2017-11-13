@@ -1,7 +1,8 @@
-package com.midcoastmaineiacs.Steamworks;
+package com.midcoastmaineiacs.Steamworks.common;
 
+import com.midcoastmaineiacs.Steamworks.api.Command;
+import com.midcoastmaineiacs.Steamworks.api.Scheduler;
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.command.Command;
 
 /**
  * Notifies the driver by causing 2 pulses to the joystick. If a Notifier is already running, will cancel itself and the

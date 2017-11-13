@@ -1,8 +1,9 @@
-package com.midcoastmaineiacs.Steamworks.auto;
+package com.midcoastmaineiacs.Steamworks.common.auto;
 
-import com.midcoastmaineiacs.Steamworks.Robot;
+import com.midcoastmaineiacs.Steamworks.api.ActiveCommand;
+import com.midcoastmaineiacs.Steamworks.common.Robot;
 
-public class DriveCommand extends MMCommand {
+public class DriveCommand extends ActiveCommand {
 	private final boolean autopilot;
 	private double left;
 	private double right;
@@ -12,13 +13,12 @@ public class DriveCommand extends MMCommand {
 	/**
 	 * Drives the robot straight, using the autopilot gyro stabilization.
 	 * @param speed desired speed
-	 * @param time  timeout, in seconds
+	 * @param time  setTimeout, in seconds
 	 */
 	public DriveCommand(double speed, double time) {
 		autopilot = true;
 		this.speed = speed;
 		this.time = time;
-		requires(Robot.driveTrain);
 	}
 
 	/**
@@ -26,7 +26,7 @@ public class DriveCommand extends MMCommand {
 	 * aren't utilized.
 	 * @param left  left motor speed
 	 * @param right right motor speed
-	 * @param time  timeout, in seconds
+	 * @param time  setTimeout, in seconds
 	 */
 	public DriveCommand(double left, double right, double time) {
 		autopilot = false;
@@ -36,6 +36,7 @@ public class DriveCommand extends MMCommand {
 	}
 
 	// Called just before this Command runs the first time
+	@Override
 	protected void initialize() {
 		/*if (gear) {
 			setTimeout(0.25);
@@ -44,7 +45,7 @@ public class DriveCommand extends MMCommand {
 			setTimeout(2);
 			Robot.driveTrain.setAutopilot(-0.6);
 		}*/
-		timeout(time);
+		setTimeout(time);
 		if (autopilot) {
 			//Robot.driveTrain.setAutopilot(speed);
 			Robot.driveTrain.takeControl(this);
@@ -65,7 +66,8 @@ public class DriveCommand extends MMCommand {
 		}
 	}
 
-	protected boolean isFinished() {
+	@Override
+	public boolean isFinished() {
 		return super.isFinished() || !Robot.driveTrain.controlledBy(this);
 	}
 }

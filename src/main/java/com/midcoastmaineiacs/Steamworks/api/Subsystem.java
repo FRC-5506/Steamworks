@@ -1,15 +1,11 @@
-package com.midcoastmaineiacs.Steamworks;
-
-import com.midcoastmaineiacs.Steamworks.auto.MMCommand;
-import edu.wpi.first.wpilibj.command.Command;
-import edu.wpi.first.wpilibj.command.Subsystem;
+package com.midcoastmaineiacs.Steamworks.api;
 
 /**
  * A Midcoast Maineiacs subsystem, which simply adds a new control-distribution system for commands and teleop control.
  */
 @SuppressWarnings("WeakerAccess")
-public abstract class MMSubsystem extends Subsystem {
-	private MMCommand controllingCommand = null;
+public abstract class Subsystem {
+	private ActiveCommand controllingCommand = null;
 
 	/**
 	 * Returns whether or not the Subsystem is controlled by a command or one of its parents.
@@ -17,19 +13,19 @@ public abstract class MMSubsystem extends Subsystem {
 	 * @param command The command to be checked (or null to check if no command controls it)
 	 * @return Whether or not the Subsystem is controlled by the command, or no command if "command" is null
 	 */
-	public boolean controlledBy(MMCommand command) {
+	public boolean controlledBy(ActiveCommand command) {
 		return controllingCommand == command || command != null && command.controls(this);
 	}
 
 	/**
 	 * Returns whether or not the Subsystem is directing controlled by a command (controlled by it, and not one of its
-	 * parents). In most cases, you should use {@link MMSubsystem#controlledBy(MMCommand)} instead, in order to obey
+	 * parents). In most cases, you should use {@link Subsystem#controlledBy(ActiveCommand)} instead, in order to obey
 	 * command hierarchy.
 	 *
 	 * @param command The command to be checked (or null to check if no command controls it)
 	 * @return Whether or not the Subsystem is controlled by the command, or no command if "command" is null
 	 */
-	public boolean directlyControlledBy(Command command) {
+	public boolean directlyControlledBy(ActiveCommand command) {
 		return controllingCommand == command;
 	}
 
@@ -39,7 +35,7 @@ public abstract class MMSubsystem extends Subsystem {
 	 *
 	 * @param command The command, or null to relinguish control to all commands
 	 */
-	public void takeControl(MMCommand command) {
+	public void takeControl(ActiveCommand command) {
 		System.out.println(this + ": Taking control: " + command);
 		if (command == null || !command.controls(this)) {
 			controllingCommand = command;
@@ -52,11 +48,11 @@ public abstract class MMSubsystem extends Subsystem {
 	 * Relinquish control of Subsystem, only of it was previously controlled by command. More specifically, will call
 	 * takeControl(null), so Subsystems may override takeControl, and this method will obey that. Will not relinquish
 	 * control if the subsystem is being controlled by the commands
-	 * {@link MMCommand#parent parent}.
+	 * {@link ActiveCommand#parent parent}.
 	 *
 	 * @return If the subsystem was previously controlled by this command AND control has been relinquished
 	 */
-	public boolean relinquishControl(MMCommand command) {
+	public boolean relinquishControl(ActiveCommand command) {
 		System.out.println(this + ": Relinquishing control from " + command + " if it's " + controllingCommand);
 		if (controllingCommand == command) {
 			takeControl(null);
@@ -86,17 +82,17 @@ public abstract class MMSubsystem extends Subsystem {
 	 * @return true if the subsystem should respond to the method that called this method
 	 */
 	public boolean willRespond() {
-		return Scheduler.enabled && (controlledBy(null) || Scheduler.getCurrentCommand() instanceof MMCommand && controlledBy((MMCommand) Scheduler.getCurrentCommand()));
+		return Scheduler.enabled && (controlledBy(null) || Scheduler.getCurrentCommand() instanceof ActiveCommand && controlledBy((ActiveCommand) Scheduler.getCurrentCommand()));
 	}
 
 	/**
-	 * Returns {@link MMSubsystem#willRespond()}, but ensures that the subsystem isn't being controlled by a passive command.
-	 * @return the result of {@link MMSubsystem#willRespond()}
+	 * Returns {@link Subsystem#willRespond()}, but ensures that the subsystem isn't being controlled by a passive command.
+	 * @return the result of {@link Subsystem#willRespond()}
 	 * @throws Scheduler.IllegalPassiveCommandException if called by a passive command
 	 */
 	public boolean verifyResponse() {
 		if (willRespond()) {
-			if (Scheduler.getCurrentCommand() != null && !(Scheduler.getCurrentCommand() instanceof MMCommand))
+			if (Scheduler.getCurrentCommand() != null && !(Scheduler.getCurrentCommand() instanceof ActiveCommand))
 				throw new Scheduler.IllegalPassiveCommandException("Passive command cannot control a subsystem!");
 			return true;
 		}
@@ -106,13 +102,7 @@ public abstract class MMSubsystem extends Subsystem {
 	public void enableTeleop(boolean enabled) {}
 
 	/**
-	 * Stop all actuators. Does not check {@link MMSubsystem#verifyResponse()}.
+	 * Stop all actuators. Does not check {@link Subsystem#verifyResponse()}.
 	 */
 	public abstract void stop();
-
-	/**
-	 * This shouldn't be necessary but it's here because wpilib. Does absolutely nothing.
-	 */
-	@Override
-	protected void initDefaultCommand() {}
 }

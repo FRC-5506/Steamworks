@@ -1,27 +1,29 @@
-package com.midcoastmaineiacs.Steamworks;
+package com.midcoastmaineiacs.Steamworks.common;
 
-import com.midcoastmaineiacs.Steamworks.auto.MMCommand;
-import edu.wpi.first.wpilibj.AnalogGyro;
+import com.midcoastmaineiacs.Steamworks.api.*;
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.SpeedController;
-import edu.wpi.first.wpilibj.VictorSP;
-import edu.wpi.first.wpilibj.command.Command;
 
 @SuppressWarnings("WeakerAccess")
-public class DriveTrain extends MMSubsystem {
-	public final SpeedController left = new VictorSP(1);
-	public final SpeedController right = new VictorSP(2);
-	public final AnalogGyro gyro = new AnalogGyro(1);
+public class DriveTrain extends Subsystem {
+	private final Motor left = Robot.api.getMotor(this, Device.DRIVE_LEFT, false);
+	private final Motor right = Robot.api.getMotor(this, Device.DRIVE_RIGHT, true);
+	public ADXRS450_Gyro gyro;
 
 	private double lastLeftSpeed = 0d;
 	private double lastRightSpeed = 0d;
 	private static final boolean ACCEL_CURVE = true;
 
 	private State state = State.DISABLED;
-	private MMCommand autopilotCommand;
+	private ActiveCommand autopilotCommand;
 
 	public double lastLeftRumble = 0d;
 	public double lastRightRumble = 0d;
+
+	public DriveTrain() {
+		if (Robot.isRio)
+			gyro = new ADXRS450_Gyro();
+	}
 
 	/**
 	 * Gives control to the currently running command and drives the robot, ensuring that the current heading is
@@ -30,11 +32,12 @@ public class DriveTrain extends MMSubsystem {
 	 * @param speed The desired speed of the robot.
 	 * @throws IllegalUseOfAutopilotException if called outside a command.
 	 */
+	@SuppressWarnings("unused")
 	public void setAutopilot(double speed) {
-		if (Scheduler.getCurrentCommand() != null && Scheduler.getCurrentCommand() instanceof MMCommand) {
+		if (Scheduler.getCurrentCommand() != null && Scheduler.getCurrentCommand() instanceof ActiveCommand) {
 			setState(State.AUTOPILOT);
-			autopilotCommand = (MMCommand) Scheduler.getCurrentCommand();
-			takeControl((MMCommand) Scheduler.getCurrentCommand());
+			autopilotCommand = (ActiveCommand) Scheduler.getCurrentCommand();
+			takeControl((ActiveCommand) Scheduler.getCurrentCommand());
 			wantedHeading = getGyroMod();
 			this.speed = speed;
 		} else if (Scheduler.getCurrentCommand() != null)
@@ -63,7 +66,7 @@ public class DriveTrain extends MMSubsystem {
 	}
 
 	@Override
-	public void takeControl(MMCommand command) {
+	public void takeControl(ActiveCommand command) {
 		if (command != null && state == State.AUTOPILOT && !autopilotInitiatedByCommand(command))
 			setState(State.COMMAND);
 		super.takeControl(command);
@@ -83,17 +86,17 @@ public class DriveTrain extends MMSubsystem {
 	 * @param command Command to check
 	 * @return True if the DriveTrain is in autopilot mode, and this command or an ancestor is the one that set the mode.
 	 */
-	private boolean autopilotInitiatedByCommand(MMCommand command) {
+	private boolean autopilotInitiatedByCommand(Command command) {
 		if (getState() != State.AUTOPILOT) return false;
 		if (autopilotCommand == command) return true;
-		for (MMCommand i: command.children) {
+		for (Command i: command.children) {
 			if (autopilotInitiatedByCommand(i)) return true;
 		}
 		return false;
 	}
 
 	@Override
-	public boolean relinquishControl(MMCommand command) {
+	public boolean relinquishControl(ActiveCommand command) {
 		boolean changed = super.relinquishControl(command);
 		// if changed is true, setState will be called anyway so we don't need to call it, hence "!changed" here
 		if (!changed && autopilotInitiatedByCommand(command))
@@ -101,32 +104,24 @@ public class DriveTrain extends MMSubsystem {
 		return changed;
 	}
 
-	public DriveTrain() {
-		gyro.setSensitivity(2d / 300);
-	}
-
 	public void driveLeft(double speed) {
-		if (verifyResponse()) {
-			lastLeftSpeed = speed;
-			left.set(speed);
-			lastLeftRumble = Math.abs(speed) >= 0.15 ? Math.abs(speed) : 0d;
-			if (!Notifier.isNotifying() && Math.abs(speed) >= 0.15)
-				Robot.joystick.setRumble(RumbleType.kLeftRumble, Math.abs(speed));
-			else if (!Notifier.isNotifying())
-				Robot.joystick.setRumble(RumbleType.kLeftRumble, 0);
-		}
+		lastLeftSpeed = speed;
+		left.set(speed);
+		lastLeftRumble = Math.abs(speed) >= 0.15 ? Math.abs(speed) : 0d;
+		if (!Notifier.isNotifying() && Math.abs(speed) >= 0.15)
+			Robot.joystick.setRumble(RumbleType.kLeftRumble, Math.abs(speed));
+		else if (!Notifier.isNotifying())
+			Robot.joystick.setRumble(RumbleType.kLeftRumble, 0);
 	}
 
 	public void driveRight(double speed) {
-		if (verifyResponse()) {
-			lastRightSpeed = speed;
-			right.set(-speed);
-			lastRightRumble = Math.abs(speed) >= 0.15 ? Math.abs(speed) : 0d;
-			if (!Notifier.isNotifying() && Math.abs(speed) >= 0.15)
-				Robot.joystick.setRumble(RumbleType.kRightRumble, Math.abs(speed));
-			else if (!Notifier.isNotifying())
-				Robot.joystick.setRumble(RumbleType.kRightRumble, 0);
-		}
+		lastRightSpeed = speed;
+		right.set(-speed);
+		lastRightRumble = Math.abs(speed) >= 0.15 ? Math.abs(speed) : 0d;
+		if (!Notifier.isNotifying() && Math.abs(speed) >= 0.15)
+			Robot.joystick.setRumble(RumbleType.kRightRumble, Math.abs(speed));
+		else if (!Notifier.isNotifying())
+			Robot.joystick.setRumble(RumbleType.kRightRumble, 0);
 	}
 
 	@Deprecated
@@ -246,8 +241,10 @@ public class DriveTrain extends MMSubsystem {
 
 	@Override
 	public void stop() {
-		left.set(0);
-		right.set(0);
+		left.stop();
+		right.stop();
+		lastLeftSpeed = 0;
+		lastRightSpeed = 0;
 		if (!Notifier.isNotifying()) {
 			Robot.joystick.setRumble(RumbleType.kRightRumble, 0);
 			Robot.joystick.setRumble(RumbleType.kLeftRumble, 0);
@@ -256,7 +253,7 @@ public class DriveTrain extends MMSubsystem {
 	}
 
 	public double getGyro() {
-		return gyro.getAngle();
+		return Robot.isRio ? gyro.getAngle() : 0d;
 	}
 
 	/**
@@ -284,8 +281,8 @@ public class DriveTrain extends MMSubsystem {
 		}
 	}
 
-	public double wantedHeading = 0;
-	public double speed = 0;
+	private double wantedHeading = 0;
+	private double speed = 0;
 	//** desired turning radius of robot, positive = right turn, negative = left, Double.MAX_VALUE for no turning. */
 	//public double turningRadius = Double.MAX_VALUE;
 

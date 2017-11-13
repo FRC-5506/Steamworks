@@ -22,7 +22,7 @@ deploy {
             // Other values can be edited through EmbeddedTools.
             // See https://github.com/JacisNonsense/EmbeddedTools#spec
         }
-        
+
         // Other artifacts can be edited through EmbeddedTools.
         // See https://github.com/JacisNonsense/EmbeddedTools#spec
     }
@@ -42,7 +42,7 @@ dependencies {
 
 jar {
     from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    manifest jaci.openrio.gradle.GradleRIOPlugin.javaManifest('com.midcoastmaineiacs.Steamworks.Robot')
+    manifest jaci.openrio.gradle.GradleRIOPlugin.javaManifest('com.midcoastmaineiacs.Steamworks.Main')
 }
 
 task wrapper(type: Wrapper) {

@@ -1,8 +1,9 @@
-package com.midcoastmaineiacs.Steamworks.auto;
+package com.midcoastmaineiacs.Steamworks.common.auto;
 
-import com.midcoastmaineiacs.Steamworks.WebSocketTableServer;
+import com.midcoastmaineiacs.Steamworks.common.WebSocketTableServer;
 import org.java_websocket.WebSocket;
 
+@SuppressWarnings("WeakerAccess")
 public class VisionServer extends WebSocketTableServer {
 	private static final int PORT = 5506;
 	/** horizontal FOV of camera */
@@ -25,10 +26,6 @@ public class VisionServer extends WebSocketTableServer {
 
 	public boolean isAlive() {
 		return sockets.size() > 0;
-	}
-
-	public void setBlind() {
-		setBoolean("izgud", false);
 	}
 
 	public boolean izgud() {

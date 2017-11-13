@@ -1,18 +1,19 @@
-package com.midcoastmaineiacs.Steamworks.auto;
+package com.midcoastmaineiacs.Steamworks.common.auto;
 
-import com.midcoastmaineiacs.Steamworks.DriveTrain;
-import com.midcoastmaineiacs.Steamworks.Robot;
+import com.midcoastmaineiacs.Steamworks.api.ActiveCommand;
+import com.midcoastmaineiacs.Steamworks.common.DriveTrain;
+import com.midcoastmaineiacs.Steamworks.common.Robot;
+import com.midcoastmaineiacs.Steamworks.rio.RioAPI;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.command.Command;
 
 @SuppressWarnings("WeakerAccess")
-public class Gear extends MMCommand {
+public class Gear extends ActiveCommand {
 	public final ScanMode scan;
 	// have I found the vision targets?
 	public boolean found;
 
 	/**
-	 * A {@link Command} which:
+	 * A {@link com.midcoastmaineiacs.Steamworks.api.Command} which:
 	 * <ul><li>
 	 *     takes control of the {@link DriveTrain DriveTrain}
 	 * </li><li>
@@ -34,6 +35,7 @@ public class Gear extends MMCommand {
 		this.scan = scan;
 	}
 
+	@Override
 	public void initialize() {
 		Robot.driveTrain.takeControl(this);
 		found = Robot.vision.izgud();
@@ -45,14 +47,14 @@ public class Gear extends MMCommand {
 	private boolean getScanDirection() {
 		switch (scan) {
 			case STARTING:
-				return Robot.pos.getSelected() == 1;
+				return Robot.dashboard.getDouble("pos") == 1;
 			case STATION:
 			default:
-				return DriverStation.getInstance().getLocation() == 1 || DriverStation.getInstance().getLocation() == 2
-																			 && DriverStation.getInstance().getAlliance() == DriverStation.Alliance.Red;
+				return Robot.api instanceof RioAPI && (DriverStation.getInstance().getLocation() == 1 || DriverStation.getInstance().getLocation() == 2 && DriverStation.getInstance().getAlliance() == DriverStation.Alliance.Red);
 		}
 	}
 
+	@Override
 	public void execute() {
 		if (!found) found = Robot.vision.izgud();
 		if (scan != ScanMode.NONE && !found) {
@@ -101,6 +103,7 @@ public class Gear extends MMCommand {
 		}
 	}
 
+	@Override
 	public boolean isFinished() {
 		return super.isFinished() || !Robot.driveTrain.controlledBy(this) || !Robot.vision.isAlive() || scan == ScanMode.NONE && !found;
 	}

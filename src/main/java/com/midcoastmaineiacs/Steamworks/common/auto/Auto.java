@@ -1,10 +1,10 @@
-package com.midcoastmaineiacs.Steamworks.auto;
+package com.midcoastmaineiacs.Steamworks.common.auto;
 
-import com.midcoastmaineiacs.Steamworks.Robot;
-import edu.wpi.first.wpilibj.DriverStation;
+import com.midcoastmaineiacs.Steamworks.api.ActiveCommand;
+import com.midcoastmaineiacs.Steamworks.common.Robot;
 
 @SuppressWarnings("WeakerAccess")
-public class Auto extends MMCommand {
+public class Auto extends ActiveCommand {
 	public enum Mode {
 		PLAY_DEAD,
 		SURGE,
@@ -35,7 +35,7 @@ public class Auto extends MMCommand {
 				break;
 			case SURGE:
 				if (Robot.starting == 2)
-					DriverStation.reportError("Surge cancelled due to illegal starting position!", false);
+					Robot.api.reportError("Surge cancelled due to illegal starting position!");
 				else
 					(new DriveCommand(-0.6, 2)).start();
 				break;
@@ -46,7 +46,7 @@ public class Auto extends MMCommand {
 	}
 
 	@Override
-	protected boolean isFinished() {
+	public boolean isFinished() {
 		return !Robot.driveTrain.controlledBy(this) || super.isFinished();
 	}
 }
