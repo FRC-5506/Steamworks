@@ -15,6 +15,39 @@ And most importantly...
  
 Starting [here](https://wpilib.screenstepslive.com/s/4485/m/13809) and reading more about sensors and other things will also serve you well, but the 3 items above are the most important.
 
+# Table of Contents
+
+ 1. [Setting up a workspace](#setting-up-a-workspace)
+	 1. [Getting started](#getting-started)
+	 2. [Pushing code to the robot](#pushing-code-to-the-robot)
+ 2. [Programming!](#programming)
+ 3. [Scheduler](#scheduler)
+ 4. [Subsystems](#subsystems)
+ 5. [Commands](#commands)
+	 1. [Starting commands](#starting-commands)
+	 2. [Active commands](#active-commands)
+	 3. [Frozen commands](#frozen-commands)
+	 3. [`Series`](#series)
+	 4. [`DriveCommand`](#drivecommand)
+ 6. [Drive train](#drive-train)
+	 1. [Autopilot](#autopilot)
+	 2. [States](#states)
+	 3. [Acceleration curve](#acceleration-curve)
+ 7. [`WebSocketTableServer`](#websockettableserver)
+	 1. [Dashboard](#dashboard)
+	 2. [VisionServer](#visionserver)
+ 8. [`Robot` (main class)](#robot-main-class)
+ 9. [`Notifier`](#notifier)
+ 10. [Checklists for adding new features](#checklists-for-adding-new-features)
+	 1. [Subsystems](#subsystems-1)
+	 2. [Commands](#commands-1)
+	 3. [Teleop controls](#teleop-controls)
+ 11. [Auto](#auto)
+ 12. [Removed classes](#removed-classes)
+ 13. [Driving](#driving)
+	 1. [Controls](#controls)
+	 2. [MMDashboard](#mmdashboard)
+
 # Setting up a workspace
 
 As of now, we don't use Eclipse anymore. We use a combination of [Intellij IDEA](https://www.jetbrains.com/idea/) for the development environment and [GradleRIO](https://github.com/Open-RIO/GradleRIO) for the workspace.
@@ -29,9 +62,13 @@ Make sure you have IntelliJ and Java 8 installed. GradleRIO is already built-in 
 
 That's the magic command. The nice thing about GradleRIO is you don't even have to load up your IDE to push code. However, in case you do have IntelliJ open, it is possible to set up the "Run code" button to do this. We won't get into that here yet, but you can talk to your friendly neighborhood programming captain for more information.
 
+> [`Table of Contents`](#table-of-contents)
+
 # Programming!
 
 This project builds on top of the [command-based programming](https://wpilib.screenstepslive.com/s/4485/m/13809/c/88893) already present in wpilib. This documentation assumes you have already read that section and are reasonably familiar with it. This simply discusses what is _different_ between our code and what is documented there.
+
+> [`Table of Contents`](#table-of-contents)
 
 ## Scheduler
 
@@ -57,6 +94,8 @@ The Scheduler class extends `TimerTask` and can be instantiated and used for cre
 
 Commands are started by `Scheduler.add(Command)`. `Command.start()` should work for all commands still, but some commands may need to have their `start()` methods manually changed to use `add()` (see [starting commands](#starting-commands) below).
 
+> [`Table of Contents`](#table-of-contents)
+
 ## Subsystems
 
 All subsystems extend an `MMSubsystem` class, which extends the WPILib `Subsystem` class. This expands upon the normal WPILib subsystem, adding new features:
@@ -66,6 +105,8 @@ All subsystems extend an `MMSubsystem` class, which extends the WPILib `Subsyste
  - `MMSubsystem` also provides a `controlledByTeleop()` method which returns true when teleop is enabled (according to the Scheduler) and the subsystem is currently _not_ controlled by any command. This implies that the subsystem should be responding to controller inputs from the driver station.
  
 > If this doesn't make sense, just keep reading.
+
+> [`Table of Contents`](#table-of-contents)
 
 ## Commands
 
@@ -106,6 +147,23 @@ The `MMCommand` class adds a host of new features:
 
 > **Note:** Be careful when starting commands within commands. If you start a command within an `execute` block, make sure you don't accidentally create a condition where the parent command will flood the scheduler with tons of child commands. Make use of `releaseForChildren` and the `requireChildren` method and variable. `requireChildren` will start as `false` and be set to `true` after `releaseForChildren` is called. See the code for `Gear` for an example of this.
 
+### Frozen commands
+
+When the robot turns on, it will automatically detect whether or not it's at a competition based on if it's connected to the FMS (or the DS is in practice mode). If so, it will enable a "competition mode" flag which can change the behavior of the robot.
+
+The biggest difference is that when the Scheduler gets disabled, passive commands behave the same way (meaning they keep running), while active commands will _not_ get cancelled, as they would otherwise. Instead they get "frozen." This keeps them alive but they will not get executed on by the Scheduler. They will remain in the schedule, dormant until the Scheduler is re-enabled.
+
+As well, if the `timeout` method is used for timing, the timing will pause while the command is dormant. Note that this does not happen if the WPILib `setTimeout` method is used. When that is used, the command will continue to timeout when the robot is disabled, which may be desired in some cases.
+
+When the Scheduler is re-enabled, the `resume` method of the command is called, then execution will resume as normal. **This means that in competition mode, disabling the robot will not cancel the commands that are running. You must hit the kill switch (A button at the time of writing) to force cancel all commands.** Otherwise, the robot may start moving again as soon as it gets re-enabled, even just in Teleop.
+
+> For safety, a warning is sent to the DS whenever the Scheduler is disabled while in competition mode, which would mean any commands that were running were not cancelled.
+
+> The Scheduler will continue to check `isCancelled()` even when a command is dormant, and if the command is cancelled, it will be run in order to allow the command to shut down. This can happen even when the robot is disabled.
+
+Competition mode can be forcibly enabled by changing the static `FORCE_COMPETITION` constant in `Robot.java` to `true`. 
+_**Important:** this is only to be used for testing purposes, and a scary warning will be sent to the DS if this is enabled. Do not do this unless you have to test a competition-only feature._
+
 ### `Series`
 
 A `Series` is an active command that simply runs each argument it given in it's constructor in parallel. It is an _active_ command, as it has the ability to start other active commands. It replaces the functionality of `CommandGroup`.
@@ -127,6 +185,8 @@ Example line of code that drives forward at 50% power for 2 seconds, stops for 5
 ```java
 (new Series(new DriveCommand(0.5, 2), new DriveCommand(0, 5), new DriveCommand(-0.5, 2))).start();
 ```
+
+> [`Table of Contents`](#table-of-contents)
 
 ## Drive train
 
@@ -182,13 +242,42 @@ The drive train implements a state system with very complicated-looking code. It
 
 The drive train also has an acceleration curve that takes effect whenever `driveLeftCurved` or `driveRightCurved` is used. It mitigates sudden acceleration by limiting how much the motor speed can change each time the method is called.
 
-## Robot (main class)
+> [`Table of Contents`](#table-of-contents)
+
+## `WebSocketTableServer`
+
+The `WebSocketTableServer` behaves similarly to the wpilib NetworkTables server. Initialize it with a name (for logging purposes), and a port. This will host a local server listening on `port`, which clients can connect to. [What is a WebSocketTable and how do I use it?](WebSocketTable.md)
+
+### Dashboard
+
+The `DashboardServer` runs on port `5800`. This is connected to by the MMDashboard automatically. It contains data to be displayed to the drivers, debugging data, and the name of the robot, `Jeffrey`, to allow the MMDashboard to recognize how to interpret the data. It is not recessive.
+
+Updates to this table are generally done in `robotPeriodic`. It is stored as a static `dashboard` variable in the main Robot class. To send a value, simply use the `set...` methods provided by `WebSocketTableServer`. Example:
+
+```java
+@Override
+protected void robotPeriodic() {
+	// ...
+	dashboard.setBoolean("enabled", Scheduler.enabled);
+	// ...
+}
+```
+
+The MMDashboard won't show new values by default. The webpage must be edited to recognize these values, however, clicking on the compass will show a debug screen which will show all of the values on the table in their raw form, even if they aren't coded to be used by the page. This is usable for debugging code. Anywhere in the code, you can reference `Robot.dashboard` to send a value to the DS for debugging.
+
+### VisionServer
+
+The `VisionServer` runs on port `5506`. This is connected to by the Raspberry Pi, which handles vision processing. This server is recessive, meaning it will update the table to the contents of whichever client has most recently connected whenever a new connection is opened.
+
+> [`Table of Contents`](#table-of-contents)
+
+## `Robot` (main class)
 
 The `Robot` class is the main class that ties everything together. It also contains the functionality formerly present in the `Teleop` and `OI` classes. It...
 
  - instantiates all subsystems
  - calibrates sensors
- - manages the SmartDashboard
+ - manages the MMDashboard
  - instantiates and starts the Scheduler
  - ensures that the Scheduler is put in the right state (`enabled` and `teleop` statuses) whenever the robot state changes
  - resets sensors at the beginning of the match
@@ -206,6 +295,8 @@ The `Notifier` is a (at the time of writing, the only) passive command in the pr
 There is a static `Robot.notifyDriver()` method which simply creates and starts a `Notifier`. This method will return immediately, even before the notifier finishes, and as such, will not interrupt the flow of the code calling it.
 
 > The `Notifier` is a passive command that _is_ set to run when disabled, and will be fully functional no matter what state the robot is in.
+
+> [`Table of Contents`](#table-of-contents)
 
 # Checklists for adding new features
 
@@ -230,15 +321,11 @@ There is a static `Robot.notifyDriver()` method which simply creates and starts 
 ## Teleop controls
 
 - [ ] Find out where to put the new controls in `teleopPeriodic()`. If there are already controls for that subsystem, then find the `if (subsystem.controlledByTeleop()) {` block for that subsystem. Otherwise, make one (make sure it's after the `if (!Scheduler.enabled) return true;` line).
-- [ ] Code the controls. Check the mappings to make sure it won't conflict with other controls and make any modifications necessary. The `joystick` variable is what you need for the joystick, and the subsystems are also stored as `Robot` variables. Anywhere where you call `getRawAxis(number)` or `getRawButton(number)`, put in a command that specifies what button or axis that number is referring to.
+- [ ] Code the controls. Check the mappings to make sure it won't conflict with other controls and make any modifications necessary. The `joystick` variable is what you need for the joystick, and the subsystems are also stored as `Robot` variables. Anywhere where you call `getRawAxis(number)` or `getRawButton(number)`, put in a comment that specifies what button or axis that number is referring to.
 - [ ] Update the mappings to reflect your changes (in the giant comment in `Robot.java` and in the [Driving > Controls](#controls) section of this document).
 - [ ] Test!
 
-## SmartDashboard indicators
-
- - [ ] Most indicators should be put in `robotPeriodic()`.
- - [ ] Make sure you update the [Driving > SmartDashboard > Indicators](#indicators) section of this document.
- - [ ] Test!
+> [`Table of Contents`](#table-of-contents)
 
 # Auto
 
@@ -252,6 +339,8 @@ The auto routine at the time of writing for the 2017 _STEAMWORKS_ challenge has 
 
 `Auto` and `Gear` demonstrate good use of `Series`, `DriveCommand`, and `releaseForChildren()`. Look at them for examples of usage of these features.
 
+> [`Table of Contents`](#table-of-contents)
+
 # Removed classes
 
 If you have looked at some older code or code for previous years, you may have noticed a few extra classes that have been merged elsewhere. Here's the three big ones:
@@ -260,9 +349,11 @@ If you have looked at some older code or code for previous years, you may have n
  - `RobotMap` is no longer used. It had no purpose. The motor controllers and sensors are now instantiated by the subsystems themselves.
  - `OI` is also no longer used. The joysticks are now completely handled within the `Robot` class. `Robot.joystick` is a lot nicer than `Robot.oi.getDriverJoystick()`, especially since now that the teleop controls are handled in `teleopPeriodic`, simply `joystick` is usually sufficient.
 
+> [`Table of Contents`](#table-of-contents)
+
 # Driving
 
-Jeffrey `v3.0` uses one controller for driving and the SmartDashboard for feedback.
+Jeffrey `v3.0` uses one controller for driving and the MMDashboard for feedback.
 
 ## Controls
 
@@ -281,55 +372,12 @@ Button | Description
 `X`                   | Climb down at half power. Use at demonstrations.
 `Right trigger`       | Climb up. The distance at which you pull the trigger controls how fast the climber works. _Will not_ work if `D-Pad` is held down, as this becomes the throttle.
 `Left trigger`        | Climb down. Use at demonstrations. Same rules as above.
-`Back`                | **Disable** the robot.
-`Start`               | **Enable** the robot (if the driver station allows).
+`Back`                | **Disable** the robot. Motors will stop, but the RSL light will stay blinking.
+`Start`               | **Enable** the robot (if the RSL light is blinking).
 `..................`  |
 
-## SmartDashboard
+## MMDashboard
 
-There are several indicators and choosers on the SmartDashboard. There are also two cameras available, each facing opposite directions.
+TODO
 
-> **Note:** It is **important** to make sure that before every match, the choosers reflect the conditions of the match. This is the driver's responsibility.
-
-### Auto chooser
-
-The auto chooser is used to pick the autonomous mode to be used in a match.
-
-Mode | Description
-:---: | ---
-`Gear`       | Attempts to place a gear on the peg. _Make sure the position selector is correct._
-`Play dead`  | Does nothing.
-`Mobility`   | If, according to the position selector, the robot is _not_ in the middle, drives forward for 2 seconds to cross the line and get 5 auto points. Use this if `Gear` is not an option and this is.
-`.........`  |
-
-### Position selector
-
-The position selector simply specifies where the robot starts the match. Just choose `Left`, `Center`, or `Right` accordingly.
-
-### Indicators
-
-There are several indicators that report statuses to the SmartDashboard. It is important to know what these mean.
-
-Indicator | Description
-:---: | ---
-`Competition mode`  | This is whether or not the robot thinks it's at a competition (or the DS is in practice mode). This primarily allows autonomous commands to keep running into the teleop period.
-`Enabled`           | This is whether or not the robot is enabled. At the moment this reflects what is shown by the RSL light.
-`Pi`                | This is whether or not the Raspberry Pi is up and running, regardless of whether or not it can see the peg.
-`Sight`             | This is whether or not the Raspberry Pi thinks it can see the peg.
-`Power`             | This is how much power is being given to the tank drive controls. Green = 100%, red = 50%.
-`................`  |
-
-There are also four additional indicators that display the state of the drive train. Which ever indicator is green is the state of the drive train, while the others will be red.
-
-State | Description
-:---: | ---
-`Disabled`   | The drive train isn't currently doing anything.
-`Teleop`     | The drive train is at the mercy of the driver's controller.
-`Command`    | The drive train is being controlled by an autonomous command, regardless of whether it was started during teleop or started along with the autonomous period.
-`Autopilot`  | Similar to `Command` but with some different technical stuff that isn't important if you aren't a programmer.
-
-> **NOTE:** As stated in the [Drive train > States](#states) section above, this does not reflect the actual state of the robot. This is what the drive train _thinks it's doing_.
->
-> E.g. if the auto command ends before the end of the autonomous period, the drive train will switch to the `Disabled` state, even though the robot is still enabled.
->
-> If there is an autonomous command running and the robot is disabled (and the command is frozen, not cancelled), the drive train will stay in the `Command` or `Autopilot` state. This doesn't mean it's moving (or trying to move), it just means it's still under the control of a command.
+> [`Table of Contents`](#table-of-contents)
